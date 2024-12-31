@@ -6,7 +6,8 @@ import { Bot } from 'grammy'
 const bot = new Bot(env.TELEGRAM_BOT_TOKEN)
 
 const getFiles = async (key: string) => {
-  const res = await fetch(`${env.TOLGEE_ENDPOINT}/v2/projects/export?ak=${key}?filterState=REVIEWED`)
+  const res = await fetch(`${env.TOLGEE_ENDPOINT}/v2/projects/export?ak=${key}&filterState=REVIEWED`)
+  if (res.status !== 200) throw new Error(`Не удалось получить файлы. Статус: ${res.status}`)
 
   const buffer = Buffer.from(await res.arrayBuffer())
   const zip = new Zip(buffer)
