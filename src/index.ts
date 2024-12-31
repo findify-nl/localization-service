@@ -5,8 +5,8 @@ import { Bot } from 'grammy'
 
 const bot = new Bot(env.TELEGRAM_BOT_TOKEN)
 
-const getFiles = async () => {
-  const res = await fetch(`${env.TOLGEE_ENDPOINT}/v2/projects/export?ak=${env.TOLGEE_API_KEY}`)
+const getFiles = async (key: string) => {
+  const res = await fetch(`${env.TOLGEE_ENDPOINT}/v2/projects/export?ak=${key}?filterState=REVIEWED`)
 
   const buffer = Buffer.from(await res.arrayBuffer())
   const zip = new Zip(buffer)
@@ -14,7 +14,7 @@ const getFiles = async () => {
   return zip.getEntries()
 }
 
-const uploadFiles = async (files: Zip.IZipEntry[]) => {
+const uploadFiles = async (files: Zip.IZipEntry[], folder: string) => {
   const authorization = await b2.authorize()
 
   const auth = await b2.getUploadUrl({
@@ -24,7 +24,7 @@ const uploadFiles = async (files: Zip.IZipEntry[]) => {
   const keys = []
 
   for (const file of files) {
-    const key = `locales/mobile-app/${file.entryName}`
+    const key = `locales/${folder}/${file.entryName}`
     const data = file.getData()
 
     const uploaded = await b2.uploadFile({
@@ -76,12 +76,17 @@ bot.hears('/upload', async ctx => {
 
   ctx.reply('Начинаем...')
 
-  try {
-    const files = await uploadFiles(await getFiles())
+  const params = env.TOLGEE_API_KEY.split(',')
 
-    ctx.reply(`Файлы успешно загружены: \n${files.map(item => `${env.CLOUDFLARE_DOMAIN_URL}/${item}`).join('\n')}`)
-  } catch (error: any) {
-    ctx.reply(`Что-то пошло не так: ${error.message}`)
+  for (const key of params) {
+    const [folder, apiKey] = key.split(' ')
+    try {
+      const files = await uploadFiles(await getFiles(apiKey), folder)
+  
+      ctx.reply(`Файлы успешно загружены: \n${files.map(item => `${env.CLOUDFLARE_DOMAIN_URL}/${item}`).join('\n')}`)
+    } catch (error: any) {
+      ctx.reply(`Что-то пошло не так: ${error.message}`)
+    }
   }
 })
 
