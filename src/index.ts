@@ -25,7 +25,7 @@ const uploadFiles = async (files: Zip.IZipEntry[], folder: string) => {
   const keys = []
 
   for (const file of files) {
-    const key = `locales/${folder}/${file.entryName}`
+    const key = `${env.BACKBLAZE_BASIC_KEY}/${folder}/${file.entryName}`
     const data = file.getData()
 
     const uploaded = await b2.uploadFile({
@@ -75,9 +75,13 @@ bot.hears('/upload', async ctx => {
   if (ctx.chat.type !== 'private') return
   if (ctx.from?.id !== env.TELEGRAM_ADMIN_ID) return
 
-  ctx.reply('Начинаем...')
+  const specificKey = ctx.match
 
-  const params = env.TOLGEE_API_KEY.split(',')
+  ctx.reply('Начинаем загрузку...')
+
+  const keys = env.TOLGEE_API_KEY.split(',')
+  const params = keys.filter(item => specificKey ? item.split(' ')[0] === specificKey : true)
+  if (!params.length) return ctx.reply(`Ключ ${specificKey} не найден. Доступные ключи: ${keys.map(item => item.split(' ')[0])}`)
 
   for (const key of params) {
     const [folder, apiKey] = key.split(' ')
