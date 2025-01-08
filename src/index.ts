@@ -71,7 +71,7 @@ const uploadFiles = async (files: Zip.IZipEntry[], folder: string) => {
   return keys
 }
 
-bot.hears('/upload', async ctx => {
+bot.command('upload', async ctx => {
   if (ctx.chat.type !== 'private') return
   if (ctx.from?.id !== env.TELEGRAM_ADMIN_ID) return
 
